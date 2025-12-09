@@ -52,28 +52,27 @@ def load_us_geojson():
 df = load_stations()
 us_geojson = load_us_geojson()
 
+st.title("EV Charging Stations in Selected US Cities")
+
 st.sidebar.header("Filters")
 
-selected_cities = st.sidebar.multiselect(
-    "Select Cities",
-    options=sorted(df["Charging Station Location"].unique()),
-    default=sorted(df["Charging Station Location"].unique()),
+select_city_sidebar = st.sidebar.selectbox(
+    "Select City",
+    options=sorted(df["Charging Station Location"].unique())
 )
 
-selected_chargers = st.sidebar.multiselect(
+select_charger_types_sidebar= st.sidebar.multiselect(
     "Select Charger Types",
     options=sorted(df["Charger Type"].unique()),
     default=sorted(df["Charger Type"].unique()),
 )
 
-st.sidebar.header("Display Options")
-
-point_size_label = st.sidebar.radio(
-    "Point Size",
-    options=["Very Small","Small", "Medium", "Large"],
-    index=2,  # default = Medium
-)
-
+point_size_label_sidebar = st.sidebar.radio(
+        "Point Size",
+        options=["Very Small", "Small", "Medium", "Large"],
+        index=2,  # default = Medium,
+        horizontal=True
+    )
 POINT_SIZE_MAP = {
     "Very Small": 10,
     "Small": 250,
@@ -81,18 +80,18 @@ POINT_SIZE_MAP = {
     "Large": 2000,
 }
 
-point_radius = POINT_SIZE_MAP[point_size_label]
+point_radius = POINT_SIZE_MAP[point_size_label_sidebar]
 
-df_filtered = df[
-    (df["Charging Station Location"].isin(selected_cities)) &
-    (df["Charger Type"].isin(selected_chargers))
-].copy()
+city_df = df[df["Charging Station Location"] == select_city_sidebar]
 
-st.title("EV Charging Stations in Selected US Cities")
+if select_charger_types_sidebar:
+    df_filtered = city_df[city_df["Charger Type"].isin(select_charger_types_sidebar)].copy()
+else:
+    #keep map center from city_df if no charger type is selected
+    df_filtered = city_df.iloc[0:0].copy()  # empty frame with same columns
 
-col1, col2 = st.columns(2)
-
-with col1:
+with st.container():
+    st.subheader("Summary")
     st.metric("Total Charging Stations", len(df_filtered))
 
 # Map
@@ -133,16 +132,25 @@ tooltip = {
     "html": """
     <b>{Charging Station Location}</b><br/>
     Charger: {Charger Type}<br/>
-    Lat: {lat}<br/>
-    Lon: {lon}
     """,
     "style": {"backgroundColor": "rgba(0,0,0,0.8)", "color": "white"},
 }
 
+if not city_df.empty:
+    center_lat = city_df["lat"].mean()
+    center_lon = city_df["lon"].mean()
+    zoom = 10  # close zoom for a city
+else:
+    # Safe fallback (should rarely happen)
+    center_lat = df["lat"].mean()
+    center_lon = df["lon"].mean()
+    zoom = 3.4
+
+
 view_state = pdk.ViewState(
-    latitude=df["lat"].mean(),
-    longitude=df["lon"].mean(),
-    zoom=3.4,
+    latitude=center_lat,
+    longitude=center_lon,
+    zoom=zoom,
     pitch=0,
 )
 
