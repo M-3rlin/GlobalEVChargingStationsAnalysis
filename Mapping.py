@@ -10,6 +10,8 @@ US_GEOJSON_URL = (
     "master/data/geojson/us-states.json"
 )
 
+INFO_CSV = "ev_charging_patterns.csv"
+
 TARGET_CITIES = [
     "Houston",
     "San Francisco",
@@ -42,6 +44,10 @@ def load_stations():
     df = df.dropna(subset=["lat", "lon"])
     return df
 
+@st.cache_data
+def load_info():
+    df =pd.read_csv("ev_charging_patterns_new.csv")
+    return df
 
 @st.cache_data
 def load_us_geojson():
@@ -50,8 +56,13 @@ def load_us_geojson():
 
 
 df = load_stations()
+info_df=load_info()
+
 us_geojson = load_us_geojson()
 
+
+
+# Map
 st.title("EV Charging Stations in Selected US Cities")
 
 st.sidebar.header("Filters")
@@ -66,6 +77,21 @@ select_charger_types_sidebar= st.sidebar.multiselect(
     options=sorted(df["Charger Type"].unique()),
     default=sorted(df["Charger Type"].unique()),
 )
+
+st.sidebar.subheader("Information on Hover")
+
+with st.container(border=True):
+
+    central_frequency = st.sidebar.radio(
+        "Central Tendency",
+        options=["Mean", "Median", "Min", "Max"],
+        index=0,  # default = Mean Average,
+        horizontal=True
+    )
+
+    options = ["Frequent User Type", "Charging Duration", "Energy Consumed", "Frequent Vehicle Model"]
+
+    select_info = st.sidebar.pills("Select Information", options, selection_mode="multi")
 
 point_size_label_sidebar = st.sidebar.radio(
         "Point Size",
@@ -82,6 +108,51 @@ POINT_SIZE_MAP = {
 
 point_radius = POINT_SIZE_MAP[point_size_label_sidebar]
 
+CENTRAL_TENDENCY_MAP = {
+    "Mean": "mean",
+    "Median": "median",
+    "Min": "min",
+    "Max": "max",
+}
+
+agg_func = CENTRAL_TENDENCY_MAP[central_frequency]
+
+# Numeric stats: duration + energy per station
+numeric_stats = (
+    info_df
+    .groupby("station_id")[["Charging Duration (hours)", "Energy Consumed (kWh)"]]
+    .agg(agg_func)
+    .round(2)
+)
+
+# Frequent (mode) user type / vehicle model per station
+user_mode = (
+    info_df
+    .groupby("station_id")["User Type"]
+    .agg(lambda x: x.mode().iat[0] if not x.mode().empty else None)
+    .rename("Frequent User Type")
+)
+
+vehicle_mode = (
+    info_df
+    .groupby("station_id")["Vehicle Model"]
+    .agg(lambda x: x.mode().iat[0] if not x.mode().empty else None)
+    .rename("Frequent Vehicle Model")
+)
+
+# Combine all stats into one DataFrame
+stats_per_station = (
+    numeric_stats
+    .join(user_mode)
+    .join(vehicle_mode)
+    .reset_index()
+)
+
+# Merge these stats onto your stations DataFrame (df must have 'station_id')
+df = df.merge(stats_per_station, on="station_id", how="left")
+
+
+
 city_df = df[df["Charging Station Location"] == select_city_sidebar]
 
 if select_charger_types_sidebar:
@@ -96,6 +167,8 @@ with st.container():
 
 # Map
 st.subheader("Map of Charging Stations")
+
+st.caption("Legend: 🔴 = DC Fast Charging  🟢 = Level 1 🔵 = Level 2")
 
 # Background is the US polygons
 geo_layer = pdk.Layer(
@@ -128,12 +201,35 @@ station_layer = pdk.Layer(
     pickable=True,
 )
 
+#Information
+
+base_tooltip = """
+<b>{Charging Station Location}</b><br/>
+{Charger Type}
+"""
+
+tooltip_html = base_tooltip
+
+if "Charging Duration" in select_info:
+    tooltip_html += f"Charging Duration (hours): " \
+                    "{Charging Duration (hours)}<br/>"
+
+if "Energy Consumed" in select_info:
+    tooltip_html += f"Energy Consumed (kWh): " \
+                    "{Energy Consumed (kWh)}<br/>"
+
+if "Frequent User Type" in select_info:
+    tooltip_html += "Frequent User Type: {Frequent User Type}<br/>"
+
+if "Frequent Vehicle Model" in select_info:
+    tooltip_html += "Frequent Vehicle Model: {Frequent Vehicle Model}<br/>"
+
 tooltip = {
-    "html": """
-    <b>{Charging Station Location}</b><br/>
-    Charger: {Charger Type}<br/>
-    """,
-    "style": {"backgroundColor": "rgba(0,0,0,0.8)", "color": "white"},
+    "html": tooltip_html,
+    "style": {
+        "backgroundColor": "rgba(0,0,0,0.8)",
+        "color": "white",
+    },
 }
 
 if not city_df.empty:
@@ -166,3 +262,26 @@ st.pydeck_chart(deck, use_container_width=True)
 
 with st.expander("Show station data"):
     st.dataframe(df_filtered, use_container_width=True)
+
+
+info_df.set_index("station_id")
+
+
+with st.expander("Show info_df data"):
+    st.dataframe(info_df, use_container_width=True)
+
+test = info_df.groupby(by="station_id").agg(
+    duration=("Charging Duration (hours)", "mean"),
+    energy_consumed=("Energy Consumed (kWh)", "mean"),
+    cost = ("Charging Cost (USD)", "mean")
+    )
+
+test = (info_df
+    .groupby("station_id")[["Charging Duration (hours)", "Energy Consumed (kWh)"]]
+    .agg(agg_func)
+    .round(2)
+)
+
+with st.expander("Show test data"):
+    st.dataframe(test, use_container_width=True)
+
