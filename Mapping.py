@@ -188,13 +188,20 @@ else:
     df_filtered = city_df.iloc[0:0].copy()  # empty frame with same columns
 
 # ~~~ SUMMARY START ~~~
+
+mean_duration = city_df["Charging Duration (hours)"].mean()
+mean_energy = city_df["Energy Consumed (kWh)"].mean()
+
+mean_duration = round(mean_duration, 2) if pd.notna(mean_duration) else "—"
+mean_energy = round(mean_energy, 2) if pd.notna(mean_energy) else "—"
+
 with st.container():
     st.subheader("Summary")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Charging Stations", len(df_filtered))
-    col2.metric("Column2", 21)
-    col2.metric("Column3", 21)
+    col2.metric("Average Charging Duration per charging station (hrs)",mean_duration)
+    col3.metric("Average Energy Consumed per chargting station (kWh)", mean_energy)
 
 st.subheader("Map of Charging Stations")
 
