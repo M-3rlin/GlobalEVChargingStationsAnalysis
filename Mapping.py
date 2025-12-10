@@ -50,15 +50,45 @@ def load_info():
     return df
 
 @st.cache_data
-def load_us_geojson():
+def load_city_geojson():
     import requests
-    return requests.get(US_GEOJSON_URL).json()
+
+    STATE_GEOJSON_URLS = {
+        "CA": "https://raw.githubusercontent.com/generalpiston/geojson-us-city-boundaries/master/states/ca.json",
+        "NY": "https://raw.githubusercontent.com/generalpiston/geojson-us-city-boundaries/master/states/ny.json",
+        "IL": "https://raw.githubusercontent.com/generalpiston/geojson-us-city-boundaries/master/states/il.json",
+        "TX": "https://raw.githubusercontent.com/generalpiston/geojson-us-city-boundaries/master/states/tx.json",
+    }
+
+    CITIES_BY_STATE = {
+        "CA": {"San Francisco", "Los Angeles"},
+        "NY": {"New York"},
+        "IL": {"Chicago"},
+        "TX": {"Houston"},
+    }
+
+    features = []
+
+    for state, url in STATE_GEOJSON_URLS.items():
+        data = requests.get(url).json()
+        wanted = CITIES_BY_STATE[state]
+
+        for feat in data.get("features", []):
+            props = feat.get("properties", {})
+            name = props.get("NAME") or props.get("name")
+            if name in wanted:
+                features.append(feat)
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+    }
+
 
 
 df = load_stations()
 info_df=load_info()
-
-us_geojson = load_us_geojson()
+city_geojson = load_city_geojson()
 
 
 
@@ -173,7 +203,7 @@ st.caption("Legend: 🔴 = DC Fast Charging  🟢 = Level 1 🔵 = Level 2")
 # Background is the US polygons
 geo_layer = pdk.Layer(
     "GeoJsonLayer",
-    data=us_geojson,
+    data=city_geojson,
     pickable=False,
     stroked=True,
     filled=True,
@@ -284,4 +314,26 @@ test = (info_df
 
 with st.expander("Show test data"):
     st.dataframe(test, use_container_width=True)
+
+#info_df.set_index("station_id")
+
+
+#with st.expander("Show info_df data"):
+#    st.dataframe(info_df, use_container_width=True)
+
+#test = info_df.groupby(by="station_id").agg(
+#    duration=("Charging Duration (hours)", "mean"),
+#    energy_consumed=("Energy Consumed (kWh)", "mean"),
+#    cost = ("Charging Cost (USD)", "mean")
+#    )
+
+#test = (info_df
+#    .groupby("station_id")[["Charging Duration (hours)", "Energy Consumed (kWh)"]]
+#    .agg(agg_func)
+#    .round(2)
+#)
+
+#with st.expander("Show test data"):
+#    st.dataframe(test, use_container_width=True)
+
 
