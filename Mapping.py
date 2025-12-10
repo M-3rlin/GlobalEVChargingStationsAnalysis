@@ -89,7 +89,6 @@ df = load_stations()
 info_df=load_info()
 city_geojson = load_city_geojson()
 
-# ~~~ HEADER START~~~
 st.title("EV Charging Stations in Selected US Cities")
 
 # ~~~SIDEBAR START~~~
@@ -188,14 +187,20 @@ else:
     #keep map center from city_df if no charger type is selected
     df_filtered = city_df.iloc[0:0].copy()  # empty frame with same columns
 
+# ~~~ SUMMARY START ~~~
 with st.container():
     st.subheader("Summary")
-    st.metric("Total Charging Stations", len(df_filtered))
 
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Charging Stations", len(df_filtered))
+    col2.metric("Column2", 21)
+    col2.metric("Column3", 21)
 
 st.subheader("Map of Charging Stations")
 
 st.caption("Legend: 🔴 = DC Fast Charging  🟢 = Level 1 🔵 = Level 2")
+
+# ~~~ SUMMARY END ~~~
 
 # ~~~Map START~~~
 
@@ -287,7 +292,7 @@ deck = pdk.Deck(
 
 st.pydeck_chart(deck, use_container_width=True)
 
-# ~~~Map START~~~
+# ~~~Map END~~~
 
 with st.expander("Show station data"):
     st.dataframe(df_filtered, use_container_width=True)
