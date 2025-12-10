@@ -85,16 +85,14 @@ def load_city_geojson():
     }
 
 
-
 df = load_stations()
 info_df=load_info()
 city_geojson = load_city_geojson()
 
-
-
-# Map
+# ~~~ HEADER START~~~
 st.title("EV Charging Stations in Selected US Cities")
 
+# ~~~SIDEBAR START~~~
 st.sidebar.header("Filters")
 
 select_city_sidebar = st.sidebar.selectbox(
@@ -178,10 +176,9 @@ stats_per_station = (
     .reset_index()
 )
 
-# Merge these stats onto your stations DataFrame (df must have 'station_id')
+# ~~~SIDEBAR END~~~
+
 df = df.merge(stats_per_station, on="station_id", how="left")
-
-
 
 city_df = df[df["Charging Station Location"] == select_city_sidebar]
 
@@ -195,12 +192,14 @@ with st.container():
     st.subheader("Summary")
     st.metric("Total Charging Stations", len(df_filtered))
 
-# Map
+
 st.subheader("Map of Charging Stations")
 
 st.caption("Legend: 🔴 = DC Fast Charging  🟢 = Level 1 🔵 = Level 2")
 
-# Background is the US polygons
+# ~~~Map START~~~
+
+# Background is the cities polygons
 geo_layer = pdk.Layer(
     "GeoJsonLayer",
     data=city_geojson,
@@ -213,9 +212,9 @@ geo_layer = pdk.Layer(
 )
 
 COLOR_MAP = {
-    "DC Fast Charger": [220, 53, 69, 180],   # red
-    "Level 1": [25, 135, 84, 180],          # green
-    "Level 2": [13, 110, 253, 180],         # blue
+    "DC Fast Charger": [220, 53, 69, 180],# red
+    "Level 1": [25, 135, 84, 180],# green
+    "Level 2": [13, 110, 253, 180],# blue
 }
 
 df_filtered["color"] = df_filtered["Charger Type"].apply(
@@ -267,11 +266,9 @@ if not city_df.empty:
     center_lon = city_df["lon"].mean()
     zoom = 10  # close zoom for a city
 else:
-    # Safe fallback (should rarely happen)
     center_lat = df["lat"].mean()
     center_lon = df["lon"].mean()
     zoom = 3.4
-
 
 view_state = pdk.ViewState(
     latitude=center_lat,
@@ -290,30 +287,32 @@ deck = pdk.Deck(
 
 st.pydeck_chart(deck, use_container_width=True)
 
+# ~~~Map START~~~
+
 with st.expander("Show station data"):
     st.dataframe(df_filtered, use_container_width=True)
 
 
-info_df.set_index("station_id")
+#info_df.set_index("station_id")
 
 
-with st.expander("Show info_df data"):
-    st.dataframe(info_df, use_container_width=True)
+#with st.expander("Show info_df data"):
+    #st.dataframe(info_df, use_container_width=True)
 
-test = info_df.groupby(by="station_id").agg(
-    duration=("Charging Duration (hours)", "mean"),
-    energy_consumed=("Energy Consumed (kWh)", "mean"),
-    cost = ("Charging Cost (USD)", "mean")
-    )
+#test = info_df.groupby(by="station_id").agg(
+    #duration=("Charging Duration (hours)", "mean"),
+    #energy_consumed=("Energy Consumed (kWh)", "mean"),
+    #cost = ("Charging Cost (USD)", "mean")
+    #)
 
-test = (info_df
-    .groupby("station_id")[["Charging Duration (hours)", "Energy Consumed (kWh)"]]
-    .agg(agg_func)
-    .round(2)
-)
+#test = (info_df
+    #.groupby("station_id")[["Charging Duration (hours)", "Energy Consumed (kWh)"]]
+    #.agg(agg_func)
+    #.round(2)
+#)
 
-with st.expander("Show test data"):
-    st.dataframe(test, use_container_width=True)
+#with st.expander("Show test data"):
+    #st.dataframe(test, use_container_width=True)
 
 #info_df.set_index("station_id")
 
