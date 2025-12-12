@@ -79,3 +79,7 @@ This project was a collaborative effort by:
 * **Swathi** (Pricing Stream Analysis)
 * **Arphaxad** (Availability Analysis)
 * **Raphael** (Mapping Analysis)
+
+## 5. Data sources and credits:
+
+* Ev charging patterns https://www.kaggle.com/datasets/valakhorasani/electric-vehicle-charging-patterns
