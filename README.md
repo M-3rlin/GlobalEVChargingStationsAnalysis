@@ -94,5 +94,5 @@ This project was a collaborative effort by:
 * Ev charging patterns https://www.kaggle.com/datasets/valakhorasani/electric-vehicle-charging-patterns
 * EV car market [Abdul insert]
 * Mapping geosojn files https://raw.githubusercontent.com/generalpiston/geojson-us-city-boundaries/master/states
-* Chat GPT was used in the assistance of the dashboard, writing the CSS and HTML codes and debugging the python code
+* Chat GPT was used to help build the dashboard, in particular for writing CSS and HTML code blocks and debugging python code blocks
 * Stackoverflow and Github repos assisted with mapping functionalities, image and GiF loading, and other formatting support
