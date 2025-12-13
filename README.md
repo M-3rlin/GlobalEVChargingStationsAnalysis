@@ -92,7 +92,7 @@ This project was a collaborative effort by:
 ## 6. Data sources and credits:
 
 * Ev charging patterns https://www.kaggle.com/datasets/valakhorasani/electric-vehicle-charging-patterns
-* EV car market [Abdul insert]
+* EV car market https://www.kaggle.com/datasets/urvishahir/electric-vehicle-specifications-dataset-2025
 * Mapping geosojn files https://raw.githubusercontent.com/generalpiston/geojson-us-city-boundaries/master/states
 * Chat GPT was used to help build the dashboard, in particular for writing CSS and HTML code blocks and debugging python code blocks
 * Stackoverflow and Github repos assisted with mapping functionalities, image and GiF loading, and other formatting support
